@@ -8,6 +8,10 @@
 #include "filesystem.h"
 #include "schemasystem/schemasystem.h"
 
+#ifndef SEMVER
+#define SEMVER "Local"
+#endif
+
 OneSTRanks g_OneSTRanks;
 PLUGIN_EXPOSE(OneSTRanks, g_OneSTRanks);
 
@@ -325,6 +329,6 @@ const char *OneSTRanks::GetName() { return "1sT-Ranks"; }
 const char *OneSTRanks::GetDescription() { return "Read-only DB backed fake scoreboard ranks"; }
 const char *OneSTRanks::GetURL() { return "https://github.com/Pisex/cs2-lvl_ranks_modules/tree/main/LR_FakeRanks"; }
 const char *OneSTRanks::GetLicense() { return "GPL-3.0"; }
-const char *OneSTRanks::GetVersion() { return "1.0.0"; }
+const char *OneSTRanks::GetVersion() { return SEMVER; }
 const char *OneSTRanks::GetDate() { return __DATE__; }
 const char *OneSTRanks::GetLogTag() { return "1sT-Ranks"; }

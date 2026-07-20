@@ -24,5 +24,13 @@ for sdk_target in MMSPlugin.sdk_targets:
     os.path.join(builder.sourcePath, '..', 'SchemaEntity'),
   ]
 
+  sha = os.environ.get("GITHUB_SHA_SHORT", "Local")
+  semver = os.environ.get("SEMVER", "Local")
+
+  binary.compiler.defines += [
+    f'GITHUB_SHA="{sha}"',
+    f'SEMVER="{semver}"'
+  ]
+
   nodes = builder.Add(binary)
   MMSPlugin.binaries += [nodes]

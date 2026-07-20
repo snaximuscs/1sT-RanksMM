@@ -3,6 +3,18 @@ set -e
 
 git submodule update --init --recursive
 
+if [ -z "${GITHUB_SHA_SHORT:-}" ] || [ "$GITHUB_SHA_SHORT" = "Local" ]; then
+  if [ -n "${GITHUB_SHA:-}" ] && [ "$GITHUB_SHA" != "Local" ]; then
+    export GITHUB_SHA_SHORT="${GITHUB_SHA:0:7}"
+  else
+    export GITHUB_SHA_SHORT="$(git rev-parse --short HEAD 2>/dev/null || echo Local)"
+  fi
+fi
+
+if [ -z "${SEMVER:-}" ]; then
+  export SEMVER="Local"
+fi
+
 SDK_DIR="/tmp/sdk"
 HL2SDK_DIR="$SDK_DIR/hl2sdk-cs2"
 MMSOURCE_DIR="$SDK_DIR/metamod-source"

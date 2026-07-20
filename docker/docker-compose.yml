@@ -4,5 +4,9 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile
+    environment:
+      GITHUB_SHA: ${GITHUB_SHA:-Local}
+      GITHUB_SHA_SHORT: ${GITHUB_SHA_SHORT:-Local}
+      SEMVER: ${SEMVER:-Local}
     volumes:
       - ..:/app/source

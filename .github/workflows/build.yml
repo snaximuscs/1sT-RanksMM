@@ -2,9 +2,19 @@ name: Continuous Integration
 
 on:
   push:
+    branches:
+      - '**'
     tags:
       - '*'
+  pull_request:
+    branches:
+      - '**'
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version/release tag to build, for example v1.0.0'
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -24,6 +34,8 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build plugin inside container
+        env:
+          SEMVER: ${{ github.event.inputs.version || github.ref_name }}
         run: docker compose -f docker/docker-compose.yml up --build --abort-on-container-exit
 
       - name: Upload Linux artifact
@@ -44,6 +56,8 @@ jobs:
 
       - name: Prepare SDK directory
         shell: powershell
+        env:
+          SEMVER: ${{ github.event.inputs.version || github.ref_name }}
         run: |
           $SDK = "C:\sdk"
           $HL2SDK = "$SDK\hl2sdk-cs2"
@@ -65,6 +79,8 @@ jobs:
           echo "HL2SDK_ROOT=$SDK_UNIX" >> $env:GITHUB_ENV
           echo "HL2SDKCS2=$HL2SDK_UNIX" >> $env:GITHUB_ENV
           echo "MMSOURCE_DEV=$MMS_UNIX" >> $env:GITHUB_ENV
+          echo "SEMVER=$env:SEMVER" >> $env:GITHUB_ENV
+          echo "GITHUB_SHA_SHORT=$($env:GITHUB_SHA.Substring(0, 7))" >> $env:GITHUB_ENV
 
       - name: Checkout AMBuild
         uses: actions/checkout@v4
@@ -104,7 +120,7 @@ jobs:
 
   release:
     name: Release
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.version != '')
     needs:
       - build-linux
       - build-windows
@@ -124,8 +140,14 @@ jobs:
           path: ./artifacts/windows
 
       - name: Create archives
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
         run: |
-          version="${GITHUB_REF#refs/tags/}"
+          if [ -n "$INPUT_VERSION" ]; then
+            version="$INPUT_VERSION"
+          else
+            version="${GITHUB_REF#refs/tags/}"
+          fi
 
           tar -czf 1sT-Ranks_${version}-linux.tar.gz \
             -C artifacts/linux .
@@ -138,6 +160,6 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: 1sT-Ranks_*.tar.gz
-          tag: ${{ github.ref }}
+          tag: ${{ github.event.inputs.version || github.ref }}
           file_glob: true
-          release_name: "${{ github.ref_name }}"
+          release_name: "${{ github.event.inputs.version || github.ref_name }}"
