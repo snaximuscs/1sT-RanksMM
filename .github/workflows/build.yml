@@ -72,6 +72,8 @@ jobs:
           git clone --recursive --branch master --single-branch https://github.com/alliedmodders/metamod-source $MMS
           git clone https://github.com/pisex/SchemaEntity.git $SCHEMA
           (Get-Content "$SCHEMA\schemasystem.cpp") -replace 'NetworkStateChanged_t', 'NetworkStateChangedData' | Set-Content "$SCHEMA\schemasystem.cpp"
+          (Get-Content "$SCHEMA\CCSPlayerPawn.h") -replace 'FL_PAWN_FAKECLIENT', 'FL_FAKECLIENT' | Set-Content "$SCHEMA\CCSPlayerPawn.h"
+          (Get-Content "$SCHEMA\CCSPlayerController.h") -replace 'FL_CONTROLLER_FAKECLIENT', 'FL_FAKECLIENT' | Set-Content "$SCHEMA\CCSPlayerController.h"
 
           $SDK_UNIX = $SDK.Replace("\", "/")
           $HL2SDK_UNIX = $HL2SDK.Replace("\", "/")

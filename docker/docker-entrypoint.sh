@@ -33,6 +33,8 @@ git clone --recursive --branch master --single-branch https://github.com/alliedm
 echo "=== Downloading SchemaEntity ==="
 git clone https://github.com/pisex/SchemaEntity.git "$SCHEMA_DIR"
 sed -i 's/NetworkStateChanged_t/NetworkStateChangedData/g' "$SCHEMA_DIR/schemasystem.cpp"
+sed -i 's/FL_PAWN_FAKECLIENT/FL_FAKECLIENT/g' "$SCHEMA_DIR/CCSPlayerPawn.h"
+sed -i 's/FL_CONTROLLER_FAKECLIENT/FL_FAKECLIENT/g' "$SCHEMA_DIR/CCSPlayerController.h"
 
 export HL2SDKCS2="$HL2SDK_DIR"
 export MMSOURCE_DEV="$MMSOURCE_DIR"

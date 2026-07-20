@@ -2,6 +2,7 @@
 
 #include <ISmmPlugin.h>
 #include <igameevents.h>
+#include <igameeventsystem.h>
 #include <iserver.h>
 #include <networksystem/inetworkmessages.h>
 #include <networksystem/inetworkserializer.h>

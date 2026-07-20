@@ -16,10 +16,10 @@ OneSTRanks g_OneSTRanks;
 PLUGIN_EXPOSE(OneSTRanks, g_OneSTRanks);
 
 IVEngineServer2 *engine = nullptr;
-ISource2Server *g_pSource2Server = nullptr;
+extern ISource2Server *g_pSource2Server;
 IGameEventSystem *g_pGameEventSystem = nullptr;
-INetworkMessages *g_pNetworkMessages = nullptr;
-IFileSystem *g_pFullFileSystem = nullptr;
+extern INetworkMessages *g_pNetworkMessages;
+extern IFileSystem *g_pFullFileSystem;
 CGlobalVars *gpGlobals = nullptr;
 IUtilsApi *g_pUtils = nullptr;
 IMySQLClient *g_pMysqlClient = nullptr;
