@@ -1,0 +1,77 @@
+# vim: set ts=2 sw=2 tw=99 noet ft=python:
+import os
+
+builder.SetBuildFolder('package')
+
+sdk_name = 'cs2'
+
+
+class SDKPackage:
+  def __init__(self, cxx):
+    self.plugin_folder_path = os.path.join(sdk_name, 'addons', MMSPlugin.plugin_name)
+    self.plugin_folder = builder.AddFolder(self.plugin_folder_path)
+    self.metamod_path = os.path.join(sdk_name, 'addons', 'metamod')
+    self.metamod = builder.AddFolder(self.metamod_path)
+    self.configs_path = os.path.join(sdk_name, 'addons', 'configs')
+    self.configs = builder.AddFolder(self.configs_path)
+
+    self.addBinFolder(cxx)
+    self.generateVDF()
+    self.addConfig()
+
+  def addBinFolder(self, cxx):
+    platform64_path_map = {
+      'windows': 'win64',
+      'linux': 'linuxsteamrt64',
+      'mac': 'osx64'
+    }
+
+    if cxx.target.arch == 'x86_64':
+      self.bin_path = os.path.join(
+        self.plugin_folder_path,
+        'bin',
+        platform64_path_map[cxx.target.platform]
+      )
+    else:
+      self.bin_path = os.path.join(self.plugin_folder_path, 'bin')
+
+    self.bin = builder.AddFolder(self.bin_path)
+
+  def generateVDF(self):
+    vdf = '"Metamod Plugin"\n'
+    vdf += '{\n'
+    vdf += f'\t"alias"\t"{MMSPlugin.plugin_alias}"\n'
+    vdf += f'\t"file"\t"{os.path.join(os.path.relpath(self.bin_path, sdk_name), MMSPlugin.plugin_name)}"\n'
+    vdf += '}\n'
+
+    builder.AddOutputFile(
+      os.path.join(self.metamod_path, f'{MMSPlugin.plugin_name}.vdf'),
+      vdf.encode('utf8')
+    )
+
+  def addConfig(self):
+    builder.AddCopy(
+      os.path.join(builder.sourcePath, 'addons', 'configs', '1sT-Ranks.cfg'),
+      self.configs
+    )
+
+  def addBinary(self, binary):
+    (_, name) = os.path.split(binary.path)
+    ext = os.path.splitext(name)[1]
+
+    builder.AddCopy(
+      binary,
+      os.path.join(self.bin_path, MMSPlugin.plugin_name + ext)
+    )
+
+
+packages = {}
+
+for sdk_target in MMSPlugin.sdk_targets:
+  cxx = sdk_target.cxx
+  packages[sdk_target.sdk['name']] = SDKPackage(cxx)
+
+sdk_package = packages[list(packages.keys())[0]]
+
+for task in MMSPlugin.binaries:
+  sdk_package.addBinary(task.binary)

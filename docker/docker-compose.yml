@@ -1,0 +1,8 @@
+services:
+  builder:
+    image: 1st-ranks-builder
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    volumes:
+      - ..:/app/source
