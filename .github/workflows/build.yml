@@ -71,6 +71,7 @@ jobs:
           git clone --recursive --branch cs2 --single-branch https://github.com/alliedmodders/hl2sdk $HL2SDK
           git clone --recursive --branch master --single-branch https://github.com/alliedmodders/metamod-source $MMS
           git clone https://github.com/pisex/SchemaEntity.git $SCHEMA
+          (Get-Content "$SCHEMA\schemasystem.cpp") -replace 'NetworkStateChanged_t', 'NetworkStateChangedData' | Set-Content "$SCHEMA\schemasystem.cpp"
 
           $SDK_UNIX = $SDK.Replace("\", "/")
           $HL2SDK_UNIX = $HL2SDK.Replace("\", "/")
