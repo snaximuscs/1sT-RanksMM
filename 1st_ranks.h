@@ -30,6 +30,7 @@ public:
     void GameFrame(bool simulating, bool bFirstTick, bool bLastTick);
     bool LoadConfig();
     void RefreshCache();
+    bool ShowRankCommand(int slot, const char *args);
 
 private:
     const char *GetAuthor() override;
@@ -43,6 +44,7 @@ private:
 
     bool ConnectDatabase();
     void ApplyPlayerRank(int slot);
+    bool GetPlayerLevel(int slot, int &level);
     int GetDisplayRankForLevel(int level) const;
     std::string Steam2FromAccountId(uint32 accountId) const;
     void RevealRanks(CPlayerBitVec &filter);

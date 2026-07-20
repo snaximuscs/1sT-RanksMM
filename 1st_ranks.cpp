@@ -20,12 +20,18 @@ extern ISource2Server *g_pSource2Server;
 IGameEventSystem *g_pGameEventSystem = nullptr;
 extern INetworkMessages *g_pNetworkMessages;
 extern IFileSystem *g_pFullFileSystem;
+CEntitySystem *g_pEntitySystem = nullptr;
 CGlobalVars *gpGlobals = nullptr;
 IUtilsApi *g_pUtils = nullptr;
 IMySQLClient *g_pMysqlClient = nullptr;
 IMySQLConnection *g_pConnection = nullptr;
 
 SH_DECL_HOOK3_void(IServerGameDLL, GameFrame, SH_NOATTRIB, 0, bool, bool, bool);
+
+CGameEntitySystem *GameEntitySystem()
+{
+    return reinterpret_cast<CGameEntitySystem *>(g_pEntitySystem);
+}
 
 CON_COMMAND_EXTERN(mm_ranks_reload, ReloadOneSTRanksConfig, "Reload 1sT-Ranks config and cache");
 CON_COMMAND_EXTERN(mm_ranks_refresh, RefreshOneSTRanksCache, "Refresh 1sT-Ranks cache");
@@ -44,7 +50,10 @@ void RefreshOneSTRanksCache(const CCommandContext &, const CCommand &)
 static void StartupServer()
 {
     if (g_pUtils)
+    {
+        g_pEntitySystem = g_pUtils->GetCEntitySystem();
         gpGlobals = g_pUtils->GetCGlobalVars();
+    }
 }
 
 bool OneSTRanks::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bool late)
@@ -96,6 +105,9 @@ void OneSTRanks::AllPluginsLoaded()
     }
 
     g_pMysqlClient = sql->GetMySQLClient();
+    g_pUtils->RegCommand(g_PLID, {}, {"!rank", "/rank"}, [this](int slot, const char *args) {
+        return ShowRankCommand(slot, args);
+    });
     g_pUtils->StartupServer(g_PLID, StartupServer);
     if (!ConnectDatabase())
         return;
@@ -142,8 +154,10 @@ bool OneSTRanks::ConnectDatabase()
 
     KeyValues *ranks = db->FindKey("ranks", false);
     if (!ranks)
+        ranks = db->FindKey("rank", false);
+    if (!ranks)
     {
-        META_CONPRINTF("[%s] Missing \"ranks\" section in addons/configs/databases.cfg\n", GetLogTag());
+        META_CONPRINTF("[%s] Missing \"ranks\" or \"rank\" section in addons/configs/databases.cfg\n", GetLogTag());
         delete db;
         return false;
     }
@@ -168,7 +182,7 @@ bool OneSTRanks::ConnectDatabase()
             META_CONPRINTF("[%s] Failed to connect to ranks database\n", GetLogTag());
             return;
         }
-        META_CONPRINTF("[%s] Connected to ranks database using databases.cfg:ranks\n", GetLogTag());
+        META_CONPRINTF("[%s] Connected to ranks database\n", GetLogTag());
         RefreshCache();
     });
     return true;
@@ -261,19 +275,13 @@ void OneSTRanks::GameFrame(bool simulating, bool bFirstTick, bool bLastTick)
 
 void OneSTRanks::ApplyPlayerRank(int slot)
 {
+    int level = 0;
+    if (!GetPlayerLevel(slot, level))
+        return;
+
     CCSPlayerController *controller = CCSPlayerController::FromSlot(slot);
     if (!controller)
         return;
-
-    const std::string steam = Steam2FromAccountId(controller->m_steamID());
-    int level = 0;
-    {
-        std::lock_guard<std::mutex> lock(m_cacheMutex);
-        auto found = m_playerLevels.find(steam);
-        if (found == m_playerLevels.end())
-            return;
-        level = found->second;
-    }
 
     const int displayRank = GetDisplayRankForLevel(level);
     if (displayRank <= 0)
@@ -289,6 +297,47 @@ void OneSTRanks::ApplyPlayerRank(int slot)
         g_pUtils->SetStateChanged((CBaseEntity *)controller, "CCSPlayerController", "m_iCompetitiveRanking");
         g_pUtils->SetStateChanged((CBaseEntity *)controller, "CCSPlayerController", "m_iCompetitiveRankType");
     }
+}
+
+bool OneSTRanks::GetPlayerLevel(int slot, int &level)
+{
+    CCSPlayerController *controller = CCSPlayerController::FromSlot(slot);
+    if (!controller || !controller->IsConnected() || controller->m_steamID() == 0)
+        return false;
+
+    const std::string steam = Steam2FromAccountId(controller->m_steamID());
+    {
+        std::lock_guard<std::mutex> lock(m_cacheMutex);
+        auto found = m_playerLevels.find(steam);
+        if (found == m_playerLevels.end())
+            return false;
+        level = found->second;
+    }
+    return true;
+}
+
+bool OneSTRanks::ShowRankCommand(int slot, const char *)
+{
+    if (!g_pUtils)
+        return false;
+
+    if (!m_connected)
+    {
+        g_pUtils->PrintToChat(slot, " [1sT-Ranks] Database not connected.");
+        return true;
+    }
+
+    int level = 0;
+    if (!GetPlayerLevel(slot, level))
+    {
+        RefreshCache();
+        g_pUtils->PrintToChat(slot, " [1sT-Ranks] Rank not found yet.");
+        return true;
+    }
+
+    const int displayRank = GetDisplayRankForLevel(level);
+    g_pUtils->PrintToChat(slot, " [1sT-Ranks] Rank: %d | Scoreboard icon: %d", level, displayRank);
+    return true;
 }
 
 int OneSTRanks::GetDisplayRankForLevel(int level) const
