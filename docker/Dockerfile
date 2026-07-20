@@ -16,9 +16,11 @@ RUN apt update && apt install -y \
     cmake \
     ninja-build \
     git \
+    libprotobuf-dev \
     zlib1g \
     zlib1g-dev \
     libssl-dev \
+    protobuf-compiler \
     pkg-config \
     curl
 
